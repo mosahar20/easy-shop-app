@@ -14,12 +14,19 @@ import { useFocusEffect } from "@react-navigation/native";
 import baseURL from "../../assets/common/baseUrl";
 import axios from "axios";
 
+import EasyButton from '../../shared/StyledComponents/EasyButton';
+
+
 //product List
 import ProductList from './ProductList'
-import SearchedProducts from "./SearchedProducts";
-import Banner from '../../shared/Banner'
-import CategoryFilter from './CategoryFilter'
 import { ScrollView } from "react-native-gesture-handler";
+
+import AsyncStorage from "@react-native-community/async-storage"
+import Error from '../../shared/Error';
+
+
+
+
 
 
 var {height} = Dimensions.get('window');
@@ -27,134 +34,80 @@ var {height} = Dimensions.get('window');
 
 const ProductContainer = (props) => {
   
-  const [products, setProducts] = useState([]);
-  const [productsFiltered, setProductsFiltered] = useState([]); 
+  const [devices, setDevices] = useState([]);
   const [focus, setFocus] = useState();
-  const [categories, setCategories] = useState([]);
-  const [productsCtg, setProductsCtg] = useState([]);
-  const [active, setActive] = useState();
-  const [initialState, setInitialState] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [name, setName] = useState('');
+  const [error , setError] = useState("");
 
 
   useFocusEffect((
     useCallback(
       () => {
         setFocus(false);
-        setActive(-1);
 
-        //products
-        axios.get(`${baseURL}products`)
-              .then((res) => {
-                setProducts(res.data);
-                setProductsFiltered(res.data);
-                setProductsCtg(res.data);
-                setInitialState(res.data);
-                setLoading(false);
-              })
-              .catch((erroe) => {
-                console.log('Api call error')
-              })
-
-        //categories
-        axios.get(`${baseURL}categories`)
-              .then((res) => {
-                setCategories(res.data);
-              })
-              .catch((erroe) => {
-                console.log('Api call error')
-              })
+        AsyncStorage.getItem("jwt")
+            .then((res) => {
+                axios
+                    .get(`${baseURL}data/my`, {
+                        headers: { Authorization: `Bearer ${res}` },
+                    })
+                    .then((res) => {
+                      setDevices(res.data);
+                      setLoading(false);
+                    })
+            })
+            .catch((error) => 
+                console.log('Api call error',error),
+                )
 
         return ()=>{
-          setProducts([]);
-          setProductsFiltered([]);
+          setDevices([]);
           setFocus();
-          setCategories([]);
-          setActive();
-          setInitialState();
         }
       },
       [],
     )
   ))
-      
-      
 
-  const searchedProducts = (text) => {
-    setProductsFiltered(
-      products.filter((i) => i.name.toLowerCase().includes(text.toLowerCase()))
-
-    )
-
-  }
-
-  const openList = () => {
-    setFocus(true);
-
-  }
-
-  const onBlur = () => {
-    setFocus(false);
-
-  }
-
-  const changectg = (ctg) => {
-    {
-      ctg == 'all' 
-        ? [setProductsCtg(initialState), setActive(true)]
-        : [
-            setProductsCtg(
-              products.filter((i) => i.category._id == ctg),
-              setActive(true)
-
-            )
-
-        ]
+  const handleSubmit = () => {
+    const body = {
+      name
     }
-  }
+    if (name === "") {
+        setError("Please fill in your name")
+    } else {
+      AsyncStorage.getItem("jwt")
+            .then((res) => {
+                axios.post(`${baseURL}data`, body, {
+                        headers: { Authorization: `Bearer ${res}` },
+                    })
+                    .then(
+                      props.navigation.navigate("Home"),
+                      setError("")
+                    )
+                    
+            })
+      .catch((error) => 
+          console.log('Api call error',error),
+          )
+    }
+}
+      
   return(
     <>
     {loading == false ? (
         <Container>
-        <Header searchBar rounded>
-          <Item>
-            <Icon name="ios-search"/>
-            <Input 
-              placeholder= "Search"
-              onFocus = {openList}
-              onChangeText={(text) => searchedProducts(text)}
-            />
-            {focus == true ? (
-              <Icon onPress={onBlur} name="ios-close"/>
-            ) : (
-              null
-            ) }
-          </Item>
-        </Header>
         {focus == true ? (
-          <SearchedProducts
-            navigation= {props.navigation}
-            productsFiltered={productsFiltered}
-          
-          />
+          <View> 
+            <Banner/>
+          </View>
         ) : (
           <ScrollView>
             <View> 
-          <View>
-            <Banner/>
-          </View>
-          <View>
-            <CategoryFilter
-              categories= {categories}
-              CategoryFilter = {changectg}
-              productsCtg = {productsCtg}
-              active = {active}
-              setActive = {setActive}        
-            />
-          </View>
-          {productsCtg.length > 0 ? (
+          {devices.length > 0 ? (
               <View style={styles.listContainer}>
-              {productsCtg.map((item) => {
+              {devices.map((item) => {
                 return(
                   <ProductList
                     navigation = {props.navigation}
@@ -166,28 +119,49 @@ const ProductContainer = (props) => {
                 )
     
               })}
+              
             </View>
+            
             ) : (
               <View style= {[styles.center, {height: height/2}]}>
-                <Text>No Products Found</Text>
+                <Text>No Devices Found</Text>
     
     
     
               </View>
     
-            
-    
-    
           )}
           
-          </View>
-    
+          
+          </View>    
           </ScrollView>
           
+          
+          
         )}
-        
-        
-        
+        <View style={{flexDirection: "row", flexWrap: "wrap",}}>
+                {error ? <Error message={error}/> : null}
+                
+                <Input 
+                placeholder={"Enter Name"}
+                name = {"name"}
+                id = {"name"}
+                value={name}
+                onChangeText = {(text) => setName(text)}            
+                />
+
+                <EasyButton 
+                  large 
+                  secondary
+                  onPress={() => [
+                    handleSubmit(),
+                  ]}
+                  >
+                    <Text style={styles.textStyle}>Add Device</Text>
+                </EasyButton>
+          
+            </View>
+         
       </Container>
     ) : (
       //Loading
@@ -207,7 +181,6 @@ const styles = StyleSheet.create({
     backgroundColor: "gainsboro",
   },
   listContainer: {
-    height: height + 150,
     flex: 1,
     flexDirection: "row",
     alignItems: "flex-start",
@@ -217,7 +190,11 @@ const styles = StyleSheet.create({
   center: {
       justifyContent: 'center',
       alignItems: 'center'
-  }
+  },
+  textStyle: {
+    color: "white",
+    fontWeight: "bold"
+}
 });
 
 export default ProductContainer;

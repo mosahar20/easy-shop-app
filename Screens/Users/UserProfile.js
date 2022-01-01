@@ -15,7 +15,6 @@ import {useEffect } from 'react/cjs/react.development'
 const UserProfile = (props) => {
     const context = useContext(AuthGlobal)
     const [userProfile, setUserProfile] = useState()
-    const [orders, setOrders] = useState()
 
     useFocusEffect(
         useCallback(() => {
@@ -29,28 +28,18 @@ const UserProfile = (props) => {
         AsyncStorage.getItem("jwt")
             .then((res) => {
                 axios
-                    .get(`${baseURL}users/${context.stateUser.user.sub}`, {
+                    .get(`${baseURL}users/myProfile`, {
                         headers: { Authorization: `Bearer ${res}` },
                     })
                     .then((user) => setUserProfile(user.data))
             })
-            .catch((error) => console.log(error))
+            .catch((error) => 
+                console.log(error),
+                )
 
-        axios
-        .get(`${baseURL}orders`)
-        .then((x) => {
-            const data = x.data;
-            console.log(data)
-            const userOrders = data.filter(
-                (order) => order.user._id === context.stateUser.user.sub
-            );
-            setOrders(userOrders);
-        })
-        .catch((error) => console.log(error))
-
+    
         return () => {
             setUserProfile();
-            setOrders();
         }
 
     }, [context.stateUser.isAuthenticated]))
@@ -74,20 +63,6 @@ const UserProfile = (props) => {
                          AsyncStorage.removeItem("jwt"),
                          logoutUser(context.dispatch)
                      ]}/>
-                </View>
-                <View style={styles.order}>
-                    <Text style={{ fontSize: 20 }}>My Orders</Text>
-                    <View>
-                        {orders ? (
-                            orders.map((x) => {
-                                return <OrderCard key={x.id} {...x} />;
-                            })
-                        ) : (
-                            <View style={styles.order}>
-                                <Text>You have no orders</Text>
-                            </View>
-                        )}
-                    </View>
                 </View>
             </ScrollView>
         </Container>

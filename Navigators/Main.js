@@ -5,12 +5,9 @@ import Icon from "react-native-vector-icons/FontAwesome"
 
 //Stack
 import HomeNavigator from './HomeNavigator';
-import CartNavigator from './CartNavigator';
 import UserNavigator from './UserNavigator';
 import AdminNavigator from './AdminNavigator';
 
-//cart icon
-import CartIcon from '../shared/CartIcon';
 
 import AuthGlobal from '../Context/store/AuthGlobal';
 
@@ -24,46 +21,29 @@ const Main = () => {
     return (
 
         <Tab.Navigator
-            initialRouteName = "Home"
+            initialRouteName = "User"
             tabBarOptions={{
                 keyboardHidesTabBar: true,
                 showLabel: false,
                 activeTintColor: '#e91e63'
             }} >
-
-                <Tab.Screen 
-                    name="Home"
-                    component= {HomeNavigator}
-                    options={{
-                        tabBarIcon : ({color}) => (
-                            <Icon 
-                                name="home"
-                                style={{position: "relative"}}
-                                color= {color}
-                                size={30}
-                            />
-                        )
-                    }}
-                />
-
-                <Tab.Screen 
-                    name="Cart"
-                    component= {CartNavigator}
-                    options={{
-                        tabBarIcon : ({color}) => (
-                            <View>
+                {context.stateUser.isAuthenticated === true ? (
+                    <Tab.Screen 
+                        name="Home"
+                        component= {HomeNavigator}
+                        options={{
+                            tabBarIcon : ({color}) => (
                                 <Icon 
-                                name="shopping-cart"
-                                color= {color}
-                                size={30}
-                            />
-                            <CartIcon/>
-                            </View>
-                            
-                        )
-                    }}
-                />
-                {context.stateUser.user.isAdmin == true ? (
+                                    name="home"
+                                    style={{position: "relative"}}
+                                    color= {color}
+                                    size={30}
+                                />
+                            )
+                        }}
+                    />
+                    ): null}
+                {context.stateUser.user.role == "Admin" ? (
                     <Tab.Screen 
                     name="Admin"
                     component= {AdminNavigator}
